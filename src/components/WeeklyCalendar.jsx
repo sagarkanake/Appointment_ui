@@ -11,10 +11,9 @@ const DnDCalendar = withDragAndDrop(Calendar);
 
 
 function WeeklyCalendar({ events , setEvents   }) {
- 
+  const base_url = import.meta.env.VITE_API_BASE_URL
   const handleSelectSlot = async ({ start, end }) => {
     const title = window.prompt('Enter appointment title:'); // Get title from user
-    console.log( ' start ', start , ' end ', end )
     if (title) {
       // Create a new event object
       const newEvent = {
@@ -25,7 +24,7 @@ function WeeklyCalendar({ events , setEvents   }) {
   
       try {
         // API call to add the appointment
-        const response = await axios.post('http://localhost:5000/api/appointments', newEvent);
+        const response = await axios.post(`${base_url}/api/appointments`, newEvent);
         
         // Use response.data._id to set the new event's ID
         setEvents([...events, { id: response.data._id, ...newEvent }]); // Add new event to state
@@ -43,7 +42,7 @@ function WeeklyCalendar({ events , setEvents   }) {
   
     try {
       // Make an API call to update the appointment in the database
-      await axios.put(`http://localhost:5000/api/appointments/${event.id}`, updatedEvent);
+      await axios.put(`${base_url}/api/appointments/${event.id}`, updatedEvent);
   
       // // Update the local state with the new event data
       const updatedEvents = events.map(e =>
@@ -63,7 +62,7 @@ function WeeklyCalendar({ events , setEvents   }) {
   
     try {
       // Make an API call to update the appointment in the database
-      await axios.put(`http://localhost:5000/api/appointments/${event.id}`, updatedEvent);
+      await axios.put(`${base_url}/api/appointments/${event.id}`, updatedEvent);
   
       // Update the local state with the new event data
       const updatedEvents = events.map(e =>
@@ -74,23 +73,11 @@ function WeeklyCalendar({ events , setEvents   }) {
       console.error('Error updating appointment:', error); // Handle error
     }
   };
-  // const handleEventDrop = ({ event, start, end }) => {
-  //   const updatedEvents = events.map(e => 
-  //     e.id === event.id ? { ...e, start, end } : e
-  //   );
-  //   setEvents(updatedEvents);
-  // };
-
-  // const handleResizeEvent = ({ event, start, end }) => {
-  //   const updatedEvents = events.map(e => 
-  //     e.id === event.id ? { ...e, start, end } : e
-  //   );
-  //   setEvents(updatedEvents);
-  // };
+ 
   const handleDeleteEvent = async (eventToDelete) => {
     try {
       // Make an API call to delete the appointment from the database
-      await axios.delete(`http://localhost:5000/api/appointments/${eventToDelete.id}`);
+      await axios.delete(`${base_url}/api/appointments/${eventToDelete.id}`);
       
       // Update the local state to remove the deleted event
       const updatedEvents = events.filter(event => event.id !== eventToDelete.id);

@@ -7,9 +7,11 @@ import axios from 'axios'; // Import axios for API requests
 
 function App() {
   const [events, setEvents] = useState([]);
+  const base_url = import.meta.env.VITE_API_BASE_URL
+
   const fetchAppointments = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/appointments');
+      const response = await fetch(`${base_url}/api/appointments`);
       const data = await response.json();
       
       // Map the data to include 'id' instead of '_id'
