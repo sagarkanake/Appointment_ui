@@ -1,0 +1,16 @@
+.App {
+  text-align: center;
+  margin: 20px;
+}
+
+.calendar-container {
+  margin-top: 20px;
+}
+
+.appointment {
+  background-color: #f4f4f4;
+  padding: 10px;
+  margin: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
