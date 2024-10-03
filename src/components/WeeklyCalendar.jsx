@@ -12,45 +12,68 @@ const DnDCalendar = withDragAndDrop(Calendar);
 
 function WeeklyCalendar({ events , setEvents   }) {
   const base_url = import.meta.env.VITE_API_BASE_URL
+  const [isLoading, setIsLoading] = useState(false);
   const handleSelectSlot = async ({ start, end }) => {
-    const title = window.prompt('Enter appointment title:'); // Get title from user
+    const title = window.prompt('Enter appointment title:');
     if (title) {
-      // Create a new event object
+      setIsLoading(true);
       const newEvent = {
         title,
         start,
-        end : start,
+        end: start,
       };
-  
+
+      const tempId = 'temp_' + new Date().getTime();
+      setEvents(prevEvents => [...prevEvents, { id: tempId, ...newEvent }]);
+
       try {
-        // API call to add the appointment
         const response = await axios.post(`${base_url}/api/appointments`, newEvent);
-        
-        // Use response.data._id to set the new event's ID
-        setEvents([...events, { id: response.data._id, ...newEvent }]); // Add new event to state
+        setEvents(prevEvents => 
+          prevEvents.map(event => 
+            event.id === tempId ? { ...event, id: response.data._id } : event
+          )
+        );
       } catch (error) {
-        console.error('Error adding appointment:', error); // Handle error
+        console.error('Error adding appointment:', error);
+        setEvents(prevEvents => prevEvents.filter(event => event.id !== tempId));
+        alert('Failed to add the appointment. Please try again.');
+      } finally {
+        setIsLoading(false);
       }
     }
   };
+
   const handleEventDrop = async ({ event, start, end }) => {
-    const updatedEvent = {
-      title: event.title,
-      start,
-      end,
-    };
-  
+    setIsLoading(true);
+    
+    // Store the original event data
+    const originalEvent = { ...event };
+    
+    // Optimistically update the UI
+    setEvents(prevEvents =>
+      prevEvents.map(ev =>
+        ev.id === event.id ? { ...ev, start, end } : ev
+      )
+    );
+
     try {
-      // Make an API call to update the appointment in the database
-      await axios.put(`${base_url}/api/appointments/${event.id}`, updatedEvent);
-  
-      // // Update the local state with the new event data
-      const updatedEvents = events.map(e =>
-        e.id === event.id ? { ...e,  start , end } : e
-      );
-      setEvents(updatedEvents);
+      await axios.put(`${base_url}/api/appointments/${event.id}`, {
+        ...event,
+        start,
+        end
+      });
+      // If successful, the optimistic update remains
     } catch (error) {
-      console.error('Error updating appointment:', error); // Handle error
+      console.error('Error updating appointment:', error);
+      // Revert to the original state if the API call fails
+      setEvents(prevEvents =>
+        prevEvents.map(ev =>
+          ev.id === event.id ? originalEvent : ev
+        )
+      );
+      alert('Failed to update the appointment. The change has been reverted.');
+    } finally {
+      setIsLoading(false);
     }
   };
   const handleResizeEvent = async ({ event, start, end }) => {
@@ -191,6 +214,7 @@ function WeeklyCalendar({ events , setEvents   }) {
   return (
     <div style={{ height: 'calc(100vh - 100px)' }}>
       <h1>Weekly Appointment Calendar</h1>
+      
       <DnDCalendar
         localizer={localizer}
         events={events}
