@@ -1,33 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState , useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import WeeklyCalendar from './components/WeeklyCalendar';
+// import WeeklyCalendar from './components/test';
 import AppointmentSummary from './components/AppointmentSummary';
-
-// Hardcoded appointment data
-const initialEvents = [
-  {
-    id: 1,
-    title: 'Dental Checkup',
-    start: new Date(2024, 9, 3, 9, 0), // October 3, 2024, 9:00 AM
-    end: new Date(2024, 9, 3, 10, 0),  // October 3, 2024, 10:00 AM
-  },
-  {
-    id: 2,
-    title: 'Teeth Cleaning',
-    start: new Date(2024, 9, 4, 14, 0), // October 4, 2024, 2:00 PM
-    end: new Date(2024, 9, 4, 15, 0),   // October 4, 2024, 3:00 PM
-  },
-  {
-    id: 3,
-    title: 'Root Canal',
-    start: new Date(2024, 9, 5, 11, 0), // October 5, 2024, 11:00 AM
-    end: new Date(2024, 9, 5, 12, 30),  // October 5, 2024, 12:30 PM
-  },
-];
+import axios from 'axios'; // Import axios for API requests
 
 function App() {
-  const [events, setEvents] = useState(initialEvents);
-
+  const [events, setEvents] = useState([]);
+  const fetchAppointments = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/appointments');
+      const data = await response.json();
+      
+      // Map the data to include 'id' instead of '_id'
+      const mappedData = data.map(appointment => ({
+        id: appointment._id, // Use the _id from the response
+        title: appointment.title,
+        start: new Date(appointment.start), // Ensure to convert to Date object if needed
+        end: new Date(appointment.end), // Ensure to convert to Date object if needed
+      }));
+  
+      setEvents(mappedData);
+      // setEvents(initialEvents);
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+    }
+  };
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
   return (
     <Router>
       <div className="App">

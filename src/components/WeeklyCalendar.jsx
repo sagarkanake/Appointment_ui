@@ -9,60 +9,18 @@ import axios from 'axios'; // Import axios for API requests
 const localizer = momentLocalizer(moment);
 const DnDCalendar = withDragAndDrop(Calendar);
 
-// Hardcoded appointment data
-const initialEvents = [
-  {
-    id: 1,
-    title: 'Dental Checkup',
-    start: new Date(2024, 9, 3, 9, 0), // October 3, 2024, 9:00 AM
-    end: new Date(2024, 9, 3, 10, 0),  // October 3, 2024, 10:00 AM
-  },
-  {
-    id: 2,
-    title: 'Teeth Cleaning',
-    start: new Date(2024, 9, 4, 14, 0), // October 4, 2024, 2:00 PM
-    end: new Date(2024, 9, 4, 15, 0),   // October 4, 2024, 3:00 PM
-  },
-  {
-    id: 3,
-    title: 'Root Canal',
-    start: new Date(2024, 9, 5, 11, 0), // October 5, 2024, 11:00 AM
-    end: new Date(2024, 9, 5, 12, 30),  // October 5, 2024, 12:30 PM
-  },
-];
 
-function WeeklyCalendar() {
-  const [events, setEvents] = useState([]);
-  useEffect(() => {
-    fetchAppointments();
-  }, []);
-  const fetchAppointments = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/api/appointments');
-      const data = await response.json();
-      
-      // Map the data to include 'id' instead of '_id'
-      const mappedData = data.map(appointment => ({
-        id: appointment._id, // Use the _id from the response
-        title: appointment.title,
-        start: new Date(appointment.start), // Ensure to convert to Date object if needed
-        end: new Date(appointment.end), // Ensure to convert to Date object if needed
-      }));
-  
-      setEvents(mappedData);
-    } catch (error) {
-      console.error('Error fetching appointments:', error);
-    }
-  };
-  console.log(' events ' , events)
+function WeeklyCalendar({ events , setEvents   }) {
+ 
   const handleSelectSlot = async ({ start, end }) => {
     const title = window.prompt('Enter appointment title:'); // Get title from user
+    console.log( ' start ', start , ' end ', end )
     if (title) {
       // Create a new event object
       const newEvent = {
         title,
         start,
-        end,
+        end : start,
       };
   
       try {
@@ -79,7 +37,7 @@ function WeeklyCalendar() {
   const handleEventDrop = async ({ event, start, end }) => {
     const updatedEvent = {
       title: event.title,
-      start : end,
+      start,
       end,
     };
   
@@ -87,9 +45,9 @@ function WeeklyCalendar() {
       // Make an API call to update the appointment in the database
       await axios.put(`http://localhost:5000/api/appointments/${event.id}`, updatedEvent);
   
-      // Update the local state with the new event data
+      // // Update the local state with the new event data
       const updatedEvents = events.map(e =>
-        e.id === event.id ? { ...e,  start : end , end } : e
+        e.id === event.id ? { ...e,  start , end } : e
       );
       setEvents(updatedEvents);
     } catch (error) {
@@ -141,23 +99,117 @@ function WeeklyCalendar() {
       console.error('Error deleting appointment:', error); // Handle error
     }
   };
+  const eventItemStyles = {
+    container: {
+      position: 'relative',
+      padding: '8px',
+      paddingRight: '40px',
+      border: '1px solid #e2e8f0',
+      borderRadius: '4px',
+      minHeight: '40px',
+      display: 'flex',
+      alignItems: 'center',
+    },
+    title: {
+      fontSize: '16px',
+      fontWeight: '600',
+      wordBreak: 'break-word',
+      width: '100%',
+      cursor: 'pointer',
+    },
+    button: {
+      position: 'absolute',
+      top: '50%',
+      right: '8px',
+      transform: 'translateY(-50%)',
+      padding: '4px 8px',
+      fontSize: '14px',
+      color: '#dc2626',
+      backgroundColor: '#fee2e2',
+      border: 'none',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      transition: 'background-color 0.3s ease',
+    },
+    tooltipWrapper: {
+      position: 'absolute',
+      bottom: '100%',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      marginBottom: '10px',
+      visibility: 'hidden',
+      opacity: 0,
+      transition: 'opacity 0.2s, visibility 0.3s',
+      zIndex: 1000,
+    },
+    tooltip: {
+      backgroundColor: '#333',
+      color: '#fff',
+      padding: '8px 12px',
+      borderRadius: '6px',
+      fontSize: '14px',
+      maxWidth: '250px',
+      wordWrap: 'break-word',
+      textAlign: 'center',
+      boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+      position: 'relative',
+    },
+    arrow: {
+      position: 'absolute',
+      bottom: '-6px',
+      left: '50%',
+      transform: 'translateX(-50%) rotate(45deg)',
+      width: '12px',
+      height: '12px',
+      backgroundColor: '#333',
+    },
+  };
 
-  const EventComponent = ({ event }) => (
-    <div>
-      <strong>{event.title}</strong>
-      <button onClick={() => handleDeleteEvent(event)} style={{ marginLeft: '5px' }}>x</button>
+  const EventComponent = ({ event }) => {
+    const [showTooltip, setShowTooltip] = useState(false);
+
+    return (
+      <div style={eventItemStyles.container}>
+      <strong 
+        style={eventItemStyles.title}
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+      >
+        {event.title}
+      </strong>
+      <div 
+        style={{
+          ...eventItemStyles.tooltipWrapper,
+          visibility: showTooltip ? 'visible' : 'hidden',
+          opacity: showTooltip ? 1 : 0,
+        }}
+      >
+        <div style={eventItemStyles.tooltip}>
+          {event.title}
+          <div style={eventItemStyles.arrow}></div>
+        </div>
+      </div>
+      <button 
+        onClick={() => handleDeleteEvent(event)}
+        style={eventItemStyles.button}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fecaca'}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
+      >
+        x
+      </button>
     </div>
-  );
+    );
+  };
 
   return (
-    <div style={{ height: '100vh', padding: '20px' }}>
+    <div style={{ height: 'calc(100vh - 100px)' }}>
       <h1>Weekly Appointment Calendar</h1>
       <DnDCalendar
         localizer={localizer}
         events={events}
         startAccessor="start"
         endAccessor="end"
-        style={{ height: 'calc(100% - 80px)' }}
+        style={{ height: 'calc(100% - 50px)' }}
         defaultView="week"
         selectable
         onSelectSlot={handleSelectSlot}
