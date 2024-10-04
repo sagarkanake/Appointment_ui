@@ -14,14 +14,17 @@ function WeeklyCalendar({ events , setEvents   }) {
   const base_url = import.meta.env.VITE_API_BASE_URL
   const [isLoading, setIsLoading] = useState(false);
   const handleSelectSlot = async ({ start, end }) => {
+    console.log( ' checked ',  typeof start, end , new Date( start.setTime(start.getTime() + (12 * 60 * 60 * 1000))  ),  new Date( start.setTime(start.getTime() + (12 * 60 * 60 * 1000))  )  )
     const title = window.prompt('Enter appointment title:');
     if (title) {
       setIsLoading(true);
       const newEvent = {
         title,
-        start,
-        end: start,
+        start : new Date( start.setTime(start.getTime() + (13 * 60 * 60 * 1000)) ),
+        end : new Date(end.setTime(end.getTime() + (14 * 60 * 60 * 1000)) ),
       };
+
+      console.log( 'newEvent ' , newEvent )
 
       const tempId = 'temp_' + new Date().getTime();
       setEvents(prevEvents => [...prevEvents, { id: tempId, ...newEvent }]);
@@ -52,15 +55,15 @@ function WeeklyCalendar({ events , setEvents   }) {
     // Optimistically update the UI
     setEvents(prevEvents =>
       prevEvents.map(ev =>
-        ev.id === event.id ? { ...ev, start, end } : ev
+        ev.id === event.id ? { ...ev,  start ,  end  } : ev
       )
     );
 
     try {
       await axios.put(`${base_url}/api/appointments/${event.id}`, {
         ...event,
-        start,
-        end
+        start ,
+        end 
       });
       // If successful, the optimistic update remains
     } catch (error) {
@@ -83,32 +86,40 @@ function WeeklyCalendar({ events , setEvents   }) {
       end,
     };
   
-    try {
-      // Make an API call to update the appointment in the database
-      await axios.put(`${base_url}/api/appointments/${event.id}`, updatedEvent);
+    const updatedEvents = events.map(e =>
+      e.id === event.id ? { ...e, start, end } : e
+    );
   
-      // Update the local state with the new event data
-      const updatedEvents = events.map(e =>
-        e.id === event.id ? { ...e, start, end } : e
-      );
-      setEvents(updatedEvents);
+    // Optimistically update the UI
+    setEvents(updatedEvents); 
+  
+    try {
+      await axios.put(`${base_url}/api/appointments/${event.id}`, updatedEvent);
     } catch (error) {
-      console.error('Error updating appointment:', error); // Handle error
+      console.error('Error updating appointment:', error);
+      
+      // Revert changes if the API call fails
+      setEvents(events); // Reset to previous state
+    } finally {
     }
   };
  
   const handleDeleteEvent = async (eventToDelete) => {
+    // Optimistically update the UI by removing the event immediately
+    const updatedEvents = events.filter(event => event.id !== eventToDelete.id);
+    setEvents(updatedEvents); // Update local state immediately
+  
     try {
       // Make an API call to delete the appointment from the database
       await axios.delete(`${base_url}/api/appointments/${eventToDelete.id}`);
-      
-      // Update the local state to remove the deleted event
-      const updatedEvents = events.filter(event => event.id !== eventToDelete.id);
-      setEvents(updatedEvents);
     } catch (error) {
       console.error('Error deleting appointment:', error); // Handle error
+      
+      // If the deletion fails, revert to the original state
+      setEvents(events); // Reset to previous state
+    } finally {
     }
-  };
+  }
   const eventItemStyles = {
     container: {
       position: 'relative',
