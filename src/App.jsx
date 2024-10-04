@@ -34,6 +34,7 @@ function App() {
   return (
     <Router>
       <div className="App">
+      
         <nav style={{ marginBottom: '20px' }}>
           <ul style={{ listStyleType: 'none', padding: 0 }}>
             <li style={{ display: 'inline', marginRight: '10px' }}>

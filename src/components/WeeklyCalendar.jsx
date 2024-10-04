@@ -14,17 +14,16 @@ function WeeklyCalendar({ events , setEvents   }) {
   const base_url = import.meta.env.VITE_API_BASE_URL
   const [isLoading, setIsLoading] = useState(false);
   const handleSelectSlot = async ({ start, end }) => {
-    console.log( ' checked ',  typeof start, end , new Date( start.setTime(start.getTime() + (12 * 60 * 60 * 1000))  ),  new Date( start.setTime(start.getTime() + (12 * 60 * 60 * 1000))  )  )
+    const momentStart = moment(start).startOf('day').add(13, 'hours'); // Set to 1 PM
+    const momentEnd = moment(start).startOf('day').add(14, 'hours'); // Set to 2 PM
     const title = window.prompt('Enter appointment title:');
     if (title) {
       setIsLoading(true);
       const newEvent = {
         title,
-        start : new Date( start.setTime(start.getTime() + (13 * 60 * 60 * 1000)) ),
-        end : new Date(end.setTime(end.getTime() + (14 * 60 * 60 * 1000)) ),
+        start: momentStart.toDate(), // Convert back to Date object
+        end: momentEnd.toDate(), // Convert back to Date object
       };
-
-      console.log( 'newEvent ' , newEvent )
 
       const tempId = 'temp_' + new Date().getTime();
       setEvents(prevEvents => [...prevEvents, { id: tempId, ...newEvent }]);
@@ -120,107 +119,42 @@ function WeeklyCalendar({ events , setEvents   }) {
     } finally {
     }
   }
-  const eventItemStyles = {
-    container: {
-      position: 'relative',
-      padding: '8px',
-      paddingRight: '40px',
-      border: '1px solid #e2e8f0',
-      borderRadius: '4px',
-      minHeight: '40px',
-      display: 'flex',
-      alignItems: 'center',
-    },
-    title: {
-      fontSize: '16px',
-      fontWeight: '600',
-      wordBreak: 'break-word',
-      width: '100%',
-      cursor: 'pointer',
-    },
-    button: {
-      position: 'absolute',
-      top: '50%',
-      right: '8px',
-      transform: 'translateY(-50%)',
-      padding: '4px 8px',
-      fontSize: '14px',
-      color: '#dc2626',
-      backgroundColor: '#fee2e2',
-      border: 'none',
-      borderRadius: '4px',
-      cursor: 'pointer',
-      transition: 'background-color 0.3s ease',
-    },
-    tooltipWrapper: {
-      position: 'absolute',
-      bottom: '100%',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      marginBottom: '10px',
-      visibility: 'hidden',
-      opacity: 0,
-      transition: 'opacity 0.2s, visibility 0.3s',
-      zIndex: 1000,
-    },
-    tooltip: {
-      backgroundColor: '#333',
-      color: '#fff',
-      padding: '8px 12px',
-      borderRadius: '6px',
-      fontSize: '14px',
-      maxWidth: '250px',
-      wordWrap: 'break-word',
-      textAlign: 'center',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
-      position: 'relative',
-    },
-    arrow: {
-      position: 'absolute',
-      bottom: '-6px',
-      left: '50%',
-      transform: 'translateX(-50%) rotate(45deg)',
-      width: '12px',
-      height: '12px',
-      backgroundColor: '#333',
-    },
-  };
 
   const EventComponent = ({ event }) => {
     const [showTooltip, setShowTooltip] = useState(false);
-
+  
     return (
-      <div style={eventItemStyles.container}>
-      <strong 
-        style={eventItemStyles.title}
+      <div className="relative p-2 border border-gray-300 rounded min-h-[40px] !flex items-center">
+      {/* Title */}
+      <div 
+        className=" flex-1 text-base font-semibold break-words cursor-pointer mr-2" // Allow title to take remaining space
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
       >
         {event.title}
-      </strong>
-      <div 
-        style={{
-          ...eventItemStyles.tooltipWrapper,
-          visibility: showTooltip ? 'visible' : 'hidden',
-          opacity: showTooltip ? 1 : 0,
-        }}
-      >
-        <div style={eventItemStyles.tooltip}>
-          {event.title}
-          <div style={eventItemStyles.arrow}></div>
-        </div>
       </div>
+
+      {/* Delete Button */}
       <button 
         onClick={() => handleDeleteEvent(event)}
-        style={eventItemStyles.button}
-        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fecaca'}
-        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
+        className="w-12 h-8 text-sm text-red-600 bg-red-200 border-none rounded cursor-pointer transition-colors duration-300 ease-in-out hover:bg-red-300 flex items-center justify-center"
       >
         x
       </button>
+
+      {/* Tooltip */}
+      <div 
+        className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 transition-opacity duration-200 ${showTooltip ? 'visible opacity-100' : 'invisible opacity-0'}`}
+      >
+        <div className="bg-gray-800 text-white p-2 rounded text-sm max-w-[250px] break-words text-center shadow-lg relative">
+          {event.title}
+          <div className="absolute bottom-[-6px] left-1/2 transform -translate-x-1/2 rotate-45 w-3 h-3 bg-gray-800"></div>
+        </div>
+      </div>
     </div>
     );
   };
+  
 
   return (
     <div style={{ height: 'calc(100vh - 100px)' }}>
